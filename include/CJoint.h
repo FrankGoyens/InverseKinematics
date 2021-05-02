@@ -13,6 +13,7 @@ class CLink;
 class CSkeleton;
 class ControlPointSphere;
 class JacobianElement;
+class MoveHandler;
 class CJoint {
   public:
     CJoint(const float minAngle, const float maxAngle, float offset, float angle, unsigned int childrenAmount,
