@@ -3,7 +3,4 @@
 
 #include <iostream>
 
-Pickable::Pickable(std::string name) : Drawable(name)
-{
-	pickingNumber = Picking::addObject(this, name);
-}
+Pickable::Pickable(std::string name) : Drawable(name) { pickingNumber = Picking::addObject(this, name); }

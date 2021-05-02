@@ -6,15 +6,14 @@
 #include "glm/vec3.hpp"
 
 class MoveHandler;
-class Movable
-{
-public:
-	Movable(MoveHandler* handler): moveHandler(handler){}
+class Movable {
+  public:
+    Movable(MoveHandler* handler) : moveHandler(handler) {}
 
-	virtual void move(glm::vec3 newPosition) = 0;
-	
-protected:
-	MoveHandler* moveHandler;
+    virtual void move(glm::vec3 newPosition) = 0;
+
+  protected:
+    MoveHandler* moveHandler;
 };
 
 #endif // MOVABLE_H

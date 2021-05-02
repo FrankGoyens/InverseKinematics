@@ -2,157 +2,127 @@
 #include <iostream>
 #include <math.h>
 
-#include "glm/vec4.hpp"
 #include "glm/gtc/matrix_inverse.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+#include "glm/vec4.hpp"
 
 using namespace std;
 
-CJoint::CJoint(const float minAngle, const float maxAngle, float offset, float angle, unsigned int childrenAmount, MoveHandler *handler, CSkeleton *skeleton): 
-	minAngle(minAngle), maxAngle(maxAngle), offset(offset), childrenAmount(childrenAmount)
-{
-	setAngle(angle);
-	jointControlPoint = new ControlPointSphere(0.008f, handler, this, skeleton);
+CJoint::CJoint(const float minAngle, const float maxAngle, float offset, float angle, unsigned int childrenAmount,
+               MoveHandler* handler, CSkeleton* skeleton)
+    : minAngle(minAngle), maxAngle(maxAngle), offset(offset), childrenAmount(childrenAmount) {
+    setAngle(angle);
+    jointControlPoint = new ControlPointSphere(0.008f, handler, this, skeleton);
 }
 
-CJoint::~CJoint()
-{
-	delete jointControlPoint;
+CJoint::~CJoint() { delete jointControlPoint; }
+
+void CJoint::addChildLink(CLink* link) { children.push_back(link); }
+
+void CJoint::setParent(CLink* link) { parent = link; }
+
+void CJoint::setAngle(float angle) {
+    if (angle < minAngle)
+        this->angle = minAngle;
+    else if (angle > maxAngle)
+        this->angle = maxAngle;
+    else
+        this->angle = angle;
 }
 
-void CJoint::addChildLink(CLink* link)
-{
-	children.push_back(link);
+std::vector<CLink*> CJoint::getChildren() const { return children; }
+
+unsigned int CJoint::getChildrenAmount() const { return childrenAmount; }
+
+glm::mat4 CJoint::getLocalCoordinateFrame() const {
+    glm::mat4 frame = glm::mat4(1.0f);
+    frame = glm::translate(frame, glm::vec3(parent->getLength(), 0.0f, 0.0f));
+    frame = glm::rotate(frame, parent->getTwist(), glm::vec3(1.0f, 0.0f, 0.0f));
+    frame = glm::translate(frame, glm::vec3(0.0f, 0.0f, offset));
+    frame = glm::rotate(frame, angle, glm::vec3(0.0f, 0.0f, 1.0f));
+
+    return frame;
 }
 
-void CJoint::setParent(CLink* link)
-{
-	parent = link;
+void CJoint::draw(const glm::mat4 parentMvpMatrix) const {
+    const glm::mat4 mvpMatrix = parentMvpMatrix * getLocalCoordinateFrame();
+
+    const glm::vec4 parentPosition = parentMvpMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    const glm::vec4 position = mvpMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+    glDisable(GL_LIGHTING);
+    glColor3f(0.0f, 0.0f, 1.0f);
+    glBegin(GL_LINES);
+    glVertex4fv(&parentPosition[0]);
+    glVertex4fv(&position[0]);
+    glEnd();
+
+    glColor3f(0.0f, 1.0f, 0.0f);
+    jointControlPoint->draw(mvpMatrix);
+    glEnable(GL_LIGHTING);
+
+    for (vector<CLink*>::const_iterator it = children.begin(); it != children.end(); it++) {
+        (*it)->getNext()->draw(mvpMatrix);
+    }
 }
 
-void CJoint::setAngle(float angle)
-{
-	if(angle<minAngle)
-		this->angle = minAngle;
-	else if(angle>maxAngle)
-		this->angle = maxAngle;
-	else
-		this->angle = angle;
+void CJoint::print(unsigned int indent) {
+    for (unsigned int i = 0; i < indent; i++) {
+        cout << " ";
+    }
+
+    cout << "Joint" << endl;
+
+    for (vector<CLink*>::iterator it = children.begin(); it != children.end(); it++) {
+        (*it)->getNext()->print(indent + 1);
+    }
 }
 
-std::vector< CLink* > CJoint::getChildren() const
-{
-	return children;
-}
+void CJoint::move(CJoint* joint, vector<JacobianElement> jacobian, glm::mat4 worldTransform, glm::vec3 newPosition,
+                  glm::vec3 forceVec) {
 
-unsigned int CJoint::getChildrenAmount() const
-{
-	return childrenAmount;
-}
+    // Calculate the axis of revolution (z-axis transformed bij world coordinates)
+    glm::vec4 revoluteAxisUndivided = worldTransform * getLocalCoordinateFrame() * glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+    glm::vec3 revoluteAxis = glm::normalize(glm::vec3(revoluteAxisUndivided / revoluteAxisUndivided.w)); // Z
 
-glm::mat4 CJoint::getLocalCoordinateFrame() const
-{	
-	glm::mat4 frame = glm::mat4(1.0f);
-	frame = glm::translate(frame, glm::vec3(parent->getLength(), 0.0f, 0.0f));
-	frame = glm::rotate(frame, parent->getTwist(), glm::vec3(1.0f, 0.0f, 0.0f));
-	frame = glm::translate(frame, glm::vec3(0.0f, 0.0f, offset));
-	frame = glm::rotate(frame, angle, glm::vec3(0.0f, 0.0f, 1.0f));
-	
-	return frame;
-}
+    // Calculate vector from the starting point to the destination point
+    glm::vec4 startPositionUndivided = worldTransform * getLocalCoordinateFrame() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    glm::vec3 jointPosition = glm::vec3(startPositionUndivided / startPositionUndivided.w);
 
-void CJoint::draw(const glm::mat4 parentMvpMatrix) const
-{
-	const glm::mat4 mvpMatrix =  parentMvpMatrix * getLocalCoordinateFrame();
-	
-	const glm::vec4 parentPosition = parentMvpMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-	const glm::vec4 position = mvpMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-	
-	glDisable(GL_LIGHTING);
-	glColor3f(0.0f, 0.0f, 1.0f);
-	glBegin(GL_LINES);
-	glVertex4fv(&parentPosition[0]);
-	glVertex4fv(&position[0]);
-	glEnd();
-	
-	glColor3f(0.0f, 1.0f, 0.0f);
-	jointControlPoint->draw(mvpMatrix);
-	glEnable(GL_LIGHTING);
-	
-	for(vector<CLink*>::const_iterator it=children.begin(); it!=children.end(); it++)
-	{
-		(*it)->getNext()->draw(mvpMatrix);
-	}	
-}
+    jacobian.push_back(JacobianElement(this, revoluteAxis, jointPosition));
 
-void CJoint::print(unsigned int indent)
-{
-	for(unsigned int i=0; i<indent; i++)
-	{
-		cout << " ";
-	}
-	
-	cout << "Joint" << endl;
-	
-	for(vector<CLink*>::iterator it=children.begin(); it!=children.end(); it++)
-	{
-		(*it)->getNext()->print(indent+1);
-	}
-}
+    if (this == joint) {
+        const float stepsize = 0.01f;
 
-void CJoint::move(CJoint* joint, vector< JacobianElement > jacobian, glm::mat4 worldTransform, glm::vec3 newPosition, glm::vec3 forceVec)
-{
-	
-	//Calculate the axis of revolution (z-axis transformed bij world coordinates)
-	glm::vec4 revoluteAxisUndivided = worldTransform * getLocalCoordinateFrame() * glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
-	glm::vec3 revoluteAxis = glm::normalize(glm::vec3(revoluteAxisUndivided/revoluteAxisUndivided.w)); //Z
+        // we reached the end effector joint
+        for (vector<JacobianElement>::iterator it = jacobian.begin(); it != jacobian.end(); it++) {
+            JacobianElement elem = (*it);
 
-	//Calculate vector from the starting point to the destination point
-	glm::vec4 startPositionUndivided = worldTransform * getLocalCoordinateFrame() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-	glm::vec3 jointPosition = glm::vec3(startPositionUndivided/startPositionUndivided.w);
-		
-	jacobian.push_back(JacobianElement(this, revoluteAxis, jointPosition));
-	
-	if(this==joint)
-	{
-		const float stepsize = 0.01f;
+            float K;
+            CLink* jointParent = elem.getJoint()->getParent();
 
-		//we reached the end effector joint
-		for(vector<JacobianElement>::iterator it=jacobian.begin(); it!=jacobian.end(); it++)
-		{
-			JacobianElement elem = (*it);
-			
-			float K;
-			CLink *jointParent = elem.getJoint()->getParent();
+            if (jointParent == NULL) {
+                K = 0.0f;
+            } else {
+                if (jointParent->getLength() == 0.0f)
+                    K = 1.0f;
+                else
+                    K = 1.0f / jointParent->getLength();
+            }
 
-			if (jointParent == NULL)
-			{
-				K = 0.0f;
-			}
-			else
-			{
-				if (jointParent->getLength() == 0.0f)
-					K = 1.0f;
-				else
-					K = 1.0f / jointParent->getLength();
-			}
+            elem.setEndEffectorPosition(jointPosition);
+            glm::vec3 linearChange = elem.getLinearChange();
 
-			elem.setEndEffectorPosition(jointPosition);
-			glm::vec3 linearChange = elem.getLinearChange();
-			
-			float force = K * (linearChange[0]*forceVec[0]+linearChange[1]*forceVec[1]+linearChange[2]*forceVec[2]),
-					angle = elem.getJoint()->getAngle(),
-					newAngle = angle + stepsize * force;
-					
-			elem.getJoint()->setAngle(newAngle);
-		}		
-	}
-	else
-	{
-		//we have not reached the joint yet keep going further down the tree
-		for(vector<CLink*>::iterator it=children.begin(); it!=children.end(); it++)
-		{
-			(*it)->getNext()->move(joint, jacobian, worldTransform * getLocalCoordinateFrame(), newPosition, forceVec);
-		}	
-	}
+            float force = K * (linearChange[0] * forceVec[0] + linearChange[1] * forceVec[1] +
+                               linearChange[2] * forceVec[2]),
+                  angle = elem.getJoint()->getAngle(), newAngle = angle + stepsize * force;
+
+            elem.getJoint()->setAngle(newAngle);
+        }
+    } else {
+        // we have not reached the joint yet keep going further down the tree
+        for (vector<CLink*>::iterator it = children.begin(); it != children.end(); it++) {
+            (*it)->getNext()->move(joint, jacobian, worldTransform * getLocalCoordinateFrame(), newPosition, forceVec);
+        }
+    }
 }
