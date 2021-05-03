@@ -1,12 +1,7 @@
 #ifndef PICKING_H
 #define PICKING_H
 
-#ifdef _WIN32
-#include <Windows.h>
-#endif
-
 #include "Pickable.h"
-#include <GL/glu.h>
 #include <string>
 #include <vector>
 

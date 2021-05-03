@@ -154,11 +154,11 @@ void CSkeleton::moveJoint(CJoint* joint, glm::vec3 newPosition, glm::vec3 forceV
     }
 }
 
-void CSkeleton::draw() const {
+void CSkeleton::draw(Renderer& renderer) const {
     vector<CLink*> children = root->getChildren();
 
     for (vector<CLink*>::const_iterator it = children.begin(); it != children.end(); it++) {
-        (*it)->getNext()->draw(vpMatrix);
+        (*it)->getNext()->draw(vpMatrix, renderer);
     }
 }
 

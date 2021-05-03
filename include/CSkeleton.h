@@ -13,12 +13,14 @@
 
 class CJoint;
 class CLink;
+class Renderer;
+
 class CSkeleton {
   public:
     CSkeleton(std::string filePath, MoveHandler* handler);
     ~CSkeleton();
 
-    void draw() const;
+    void draw(Renderer&) const;
     void print() const;
 
     void setPosition(glm::vec3 position);

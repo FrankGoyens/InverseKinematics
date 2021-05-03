@@ -14,6 +14,8 @@ class CSkeleton;
 class ControlPointSphere;
 class JacobianElement;
 class MoveHandler;
+class Renderer;
+
 class CJoint {
   public:
     CJoint(const float minAngle, const float maxAngle, float offset, float angle, unsigned int childrenAmount,
@@ -32,7 +34,7 @@ class CJoint {
 
     glm::mat4 getLocalCoordinateFrame() const;
 
-    void draw(const glm::mat4 vpMatrix) const;
+    void draw(const glm::mat4 vpMatrix, Renderer&) const;
     void print(unsigned int indent = 0);
     void move(CJoint* joint, std::vector<JacobianElement> jacobian, glm::mat4 worldTransform, glm::vec3 newPosition,
               glm::vec3 forceVec);

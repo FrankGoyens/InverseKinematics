@@ -1,7 +1,18 @@
 #include "MainWindow.h"
+
 #include <chrono>
 #include <iostream>
 #include <string>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
+#include <GL/glew.h>
+#include <GL/glu.h>
+#include <GLFW/glfw3.h>
+
+#include <Renderer.h>
 
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -164,6 +175,8 @@ void MainWindow::render(glm::mat4 vpMatrix) {
     glLoadIdentity();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    Renderer renderer;
+
     if (dragging) {
         glDisable(GL_LIGHTING);
         glPointSize(10.0f);
@@ -175,7 +188,7 @@ void MainWindow::render(glm::mat4 vpMatrix) {
     }
 
     skeleton->setTransformMatrix(vpMatrix);
-    skeleton->draw();
+    skeleton->draw(renderer);
 
     glFlush();
     glfwSwapBuffers(window);

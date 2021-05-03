@@ -1,14 +1,6 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
-#include <GL/glew.h>
-#include <GL/glu.h>
-#include <GLFW/glfw3.h>
-
 #include "CSkeleton.h"
 #include "Camera.h"
 #include "ControlPointSphere.h"

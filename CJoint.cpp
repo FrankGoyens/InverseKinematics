@@ -5,6 +5,7 @@
 #include "glm/gtc/matrix_inverse.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/vec4.hpp"
+#include <Renderer.h>
 
 using namespace std;
 
@@ -44,25 +45,21 @@ glm::mat4 CJoint::getLocalCoordinateFrame() const {
     return frame;
 }
 
-void CJoint::draw(const glm::mat4 parentMvpMatrix) const {
+void CJoint::draw(const glm::mat4 parentMvpMatrix, Renderer& renderer) const {
     const glm::mat4 mvpMatrix = parentMvpMatrix * getLocalCoordinateFrame();
 
     const glm::vec4 parentPosition = parentMvpMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
     const glm::vec4 position = mvpMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
-    glDisable(GL_LIGHTING);
-    glColor3f(0.0f, 0.0f, 1.0f);
-    glBegin(GL_LINES);
-    glVertex4fv(&parentPosition[0]);
-    glVertex4fv(&position[0]);
-    glEnd();
+    renderer.DisableLighting();
+    renderer.DrawLine(parentPosition, position);
 
-    glColor3f(0.0f, 1.0f, 0.0f);
+    renderer.SetColor(0.f, 1.f, 0.f);
     jointControlPoint->draw(mvpMatrix);
-    glEnable(GL_LIGHTING);
+    renderer.EnableLighting();
 
     for (vector<CLink*>::const_iterator it = children.begin(); it != children.end(); it++) {
-        (*it)->getNext()->draw(mvpMatrix);
+        (*it)->getNext()->draw(mvpMatrix, renderer);
     }
 }
 
