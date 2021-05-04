@@ -1,13 +1,13 @@
-#ifndef CJOINT_H
-#define CJOINT_H
+#pragma once
+
+#include <vector>
+
+#include <glm/mat4x4.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 #include "CLink.h"
-#include "ControlPointSphere.h"
 #include "JacobianElement.h"
-#include "glm/mat4x4.hpp"
-#include "glm/vec3.hpp"
-#include "glm/vec4.hpp"
-#include <vector>
 
 class CLink;
 class CSkeleton;
@@ -16,11 +16,11 @@ class JacobianElement;
 class MoveHandler;
 class Renderer;
 
-class CJoint {
+class CJoint final {
   public:
     CJoint(const float minAngle, const float maxAngle, float offset, float angle, unsigned int childrenAmount,
            MoveHandler* handler, CSkeleton* skeleton);
-    ~CJoint();
+    ~CJoint() = default;
 
     void addChildLink(CLink* link);
     void setParent(CLink* link);
@@ -44,12 +44,8 @@ class CJoint {
     float offset /* kleine d */, angle /* theta */;
     const int childrenAmount;
 
-    ControlPointSphere* jointControlPoint;
-
     glm::vec3 orientation;
 
     CLink* parent;
     std::vector<CLink*> children;
 };
-
-#endif // CJOINT_H

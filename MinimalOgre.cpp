@@ -15,6 +15,8 @@
 
 #include <OgreHeaderSuffix.h>
 
+#include <Renderer.h>
+
 MinimalOgre::MinimalOgre() : OgreBites::ApplicationContext("OgreTutorialApp") {}
 
 MinimalOgre::~MinimalOgre() { delete m_cameraMan; }
@@ -80,28 +82,13 @@ void MinimalOgre::setup() { // do not forget to call the base first
     getRenderWindow()->addViewport(cam);
 
     // finally something to render
-    Ogre::Entity* ent = scnMgr->createEntity("sphere.mesh");
-    auto material = Ogre::MaterialManager::getSingleton().getByName("Template/Blue");
-    ent->setMaterial(material);
-    Ogre::SceneNode* node = scnMgr->getRootSceneNode()->createChildSceneNode();
-    node->attachObject(ent);
-    node->scale({.01f, .01f, .01f});
-
-    // Render a line
-    auto* manualObject_line = scnMgr->createManualObject();
-    auto lineMaterial = Ogre::MaterialManager::getSingleton().getByName("Template/GreenNonShaded");
-
-    manualObject_line->begin(lineMaterial, Ogre::RenderOperation::OT_LINE_STRIP);
-    manualObject_line->position({0, 0, 0});
-    manualObject_line->position({10, 0, 0});
-    manualObject_line->end();
-
-    auto* lineNode = scnMgr->getRootSceneNode()->createChildSceneNode();
-    lineNode->attachObject(manualObject_line);
+    Renderer renderer(*root, *scnMgr);
+    renderer.Sphere({0, 0, 0, 1});
+    renderer.DrawLine({0, 0, 0, 1}, {10, 0, 0, 1});
 
     // Set up the cameraman
     m_cameraMan = new OgreBites::CameraMan(camNode);
-    m_cameraMan->setTarget(node);
+    m_cameraMan->setTarget(scnMgr->getRootSceneNode());
     m_cameraMan->setStyle(OgreBites::CameraStyle::CS_FREELOOK);
     m_cameraMan->setYawPitchDist(Ogre::Radian(0), Ogre::Radian(0.3f), 50);
 

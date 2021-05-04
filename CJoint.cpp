@@ -1,10 +1,12 @@
 #include "CJoint.h"
-#include <iostream>
-#include <math.h>
 
-#include "glm/gtc/matrix_inverse.hpp"
-#include "glm/gtc/matrix_transform.hpp"
-#include "glm/vec4.hpp"
+#include <cmath>
+#include <iostream>
+
+#include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/vec4.hpp>
+
 #include <Renderer.h>
 
 using namespace std;
@@ -13,10 +15,7 @@ CJoint::CJoint(const float minAngle, const float maxAngle, float offset, float a
                MoveHandler* handler, CSkeleton* skeleton)
     : minAngle(minAngle), maxAngle(maxAngle), offset(offset), childrenAmount(childrenAmount) {
     setAngle(angle);
-    jointControlPoint = new ControlPointSphere(0.008f, handler, this, skeleton);
 }
-
-CJoint::~CJoint() { delete jointControlPoint; }
 
 void CJoint::addChildLink(CLink* link) { children.push_back(link); }
 
@@ -55,7 +54,8 @@ void CJoint::draw(const glm::mat4 parentMvpMatrix, Renderer& renderer) const {
     renderer.DrawLine(parentPosition, position);
 
     renderer.SetColor(0.f, 1.f, 0.f);
-    jointControlPoint->draw(mvpMatrix);
+
+    renderer.Sphere(position);
     renderer.EnableLighting();
 
     for (vector<CLink*>::const_iterator it = children.begin(); it != children.end(); it++) {
