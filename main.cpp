@@ -1,7 +1,9 @@
-#include "OgreMainWindow.h"
-#include <iostream>
+#include "MinimalOgre.h"
 
 int main(int argc, char** argv) {
-    OgreMainWindow window;
+    MinimalOgre app;
+    app.initApp();
+    app.getRoot()->startRendering();
+    app.closeApp();
     return 0;
 }
