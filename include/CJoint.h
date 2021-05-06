@@ -13,13 +13,12 @@ class CLink;
 class CSkeleton;
 class ControlPointSphere;
 class JacobianElement;
-class MoveHandler;
-class Renderer;
+class SkeletonRenderer;
 
 class CJoint final {
   public:
     CJoint(const float minAngle, const float maxAngle, float offset, float angle, unsigned int childrenAmount,
-           MoveHandler* handler, CSkeleton* skeleton);
+           CSkeleton* skeleton);
     ~CJoint() = default;
 
     void addChildLink(CLink* link);
@@ -34,7 +33,7 @@ class CJoint final {
 
     glm::mat4 getLocalCoordinateFrame() const;
 
-    void draw(const glm::mat4 vpMatrix, Renderer&) const;
+    void draw(const glm::mat4 vpMatrix, SkeletonRenderer&);
     void print(unsigned int indent = 0);
     void move(CJoint* joint, std::vector<JacobianElement> jacobian, glm::mat4 worldTransform, glm::vec3 newPosition,
               glm::vec3 forceVec);

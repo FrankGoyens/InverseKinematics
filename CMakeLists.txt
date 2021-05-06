@@ -2,25 +2,26 @@ cmake_minimum_required(VERSION 3.11)
 
 project(InverseKinematics)
 
+set(CMAKE_CXX_STANDARD 17)
+
 set(InverseKinematics_Headers
 	include/CJoint.h
 	include/CLink.h
 	include/CSkeleton.h
 	include/JacobianElement.h
+	include/SkeletonRenderer.h
+	include/SkeletonPicker.h
 	MinimalOgre.h
 )
 
 set(InverseKinematics_Sources
 	main.cpp
-	#CJoint.cpp
-	#CLink.cpp
-	#CSkeleton.cpp
-	#JacobianElement.cpp
 	OgreSkeletonRenderer.cpp
-	#CJoint.cpp
-	#CLink.cpp
-	#CSkeleton.cpp
-	#JacobianElement.cpp
+	OgreSkeletonPicker.cpp
+	CJoint.cpp
+	CLink.cpp
+	CSkeleton.cpp
+	JacobianElement.cpp
 	MinimalOgre.cpp
 )
 

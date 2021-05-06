@@ -8,9 +8,7 @@
 
 using namespace std;
 
-CSkeleton::CSkeleton(std::string filePath, MoveHandler* handler) : root(NULL) {
-    loadSkeletonFromPath(filePath, handler);
-}
+CSkeleton::CSkeleton(std::string filePath) : root(NULL) { loadSkeletonFromPath(filePath); }
 
 CSkeleton::~CSkeleton() {
     if (root != NULL)
@@ -25,7 +23,7 @@ CSkeleton::~CSkeleton() {
     }
 }
 
-void CSkeleton::loadSkeletonFromPath(std::string filePath, MoveHandler* handler) {
+void CSkeleton::loadSkeletonFromPath(std::string filePath) {
     ifstream inputStream;
 
     inputStream.open(filePath.c_str());
@@ -43,7 +41,7 @@ void CSkeleton::loadSkeletonFromPath(std::string filePath, MoveHandler* handler)
             continue;
 
         if (currentLine.find("JOINT", 0) != string::npos) {
-            CJoint* newJoint = getJointFromString(currentLine, handler);
+            CJoint* newJoint = getJointFromString(currentLine);
             if (lastLink == NULL) {
                 /*Er zijn nog geen links, dus deze joint is de root*/
                 root = newJoint;
@@ -69,7 +67,7 @@ void CSkeleton::loadSkeletonFromPath(std::string filePath, MoveHandler* handler)
     inputStream.close();
 }
 
-CJoint* CSkeleton::getJointFromString(string jointString, MoveHandler* handler) {
+CJoint* CSkeleton::getJointFromString(string jointString) {
     unsigned int spaces[5];
 
     for (unsigned int i = 0; i < 5; i++) {
@@ -84,7 +82,7 @@ CJoint* CSkeleton::getJointFromString(string jointString, MoveHandler* handler) 
 
     unsigned int childrenAmount = stoi(jointString.substr(spaces[4] + 1, childrenAmountStringLength));
 
-    CJoint* newJoint = new CJoint(lowerBound, upperBound, offset, angle, childrenAmount, handler, this);
+    CJoint* newJoint = new CJoint(lowerBound, upperBound, offset, angle, childrenAmount, this);
 
     return newJoint;
 }
@@ -154,7 +152,7 @@ void CSkeleton::moveJoint(CJoint* joint, glm::vec3 newPosition, glm::vec3 forceV
     }
 }
 
-void CSkeleton::draw(Renderer& renderer) const {
+void CSkeleton::draw(SkeletonRenderer& renderer) const {
     vector<CLink*> children = root->getChildren();
 
     for (vector<CLink*>::const_iterator it = children.begin(); it != children.end(); it++) {

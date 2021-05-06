@@ -7,12 +7,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/vec4.hpp>
 
-#include <Renderer.h>
+#include <SkeletonRenderer.h>
 
 using namespace std;
 
 CJoint::CJoint(const float minAngle, const float maxAngle, float offset, float angle, unsigned int childrenAmount,
-               MoveHandler* handler, CSkeleton* skeleton)
+               CSkeleton* skeleton)
     : minAngle(minAngle), maxAngle(maxAngle), offset(offset), childrenAmount(childrenAmount) {
     setAngle(angle);
 }
@@ -44,19 +44,14 @@ glm::mat4 CJoint::getLocalCoordinateFrame() const {
     return frame;
 }
 
-void CJoint::draw(const glm::mat4 parentMvpMatrix, Renderer& renderer) const {
+void CJoint::draw(const glm::mat4 parentMvpMatrix, SkeletonRenderer& renderer) {
     const glm::mat4 mvpMatrix = parentMvpMatrix * getLocalCoordinateFrame();
 
     const glm::vec4 parentPosition = parentMvpMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
     const glm::vec4 position = mvpMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
-    renderer.DisableLighting();
-    renderer.DrawLine(parentPosition, position);
-
-    renderer.SetColor(0.f, 1.f, 0.f);
-
-    renderer.Sphere(position);
-    renderer.EnableLighting();
+    renderer.Line(parentPosition, position);
+    renderer.JointSphere(*this, position);
 
     for (vector<CLink*>::const_iterator it = children.begin(); it != children.end(); it++) {
         (*it)->getNext()->draw(mvpMatrix, renderer);
