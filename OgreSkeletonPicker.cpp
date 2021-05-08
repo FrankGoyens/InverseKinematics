@@ -120,60 +120,76 @@ void GetMeshInformation(const Ogre::MeshPtr mesh, size_t& vertex_count, Ogre::Ve
         current_offset = next_offset;
     }
 }
+
+static float CalculateClosestDistanceToMesh(const Ogre::Entity& entity, const Ogre::Ray& pickRay) {
+    // mesh data to retrieve
+    size_t vertex_count;
+    size_t index_count;
+    Ogre::Vector3* vertices;
+    unsigned long* indices;
+
+    GetMeshInformation(entity.getMesh(), vertex_count, vertices, index_count, indices,
+                       entity.getParentNode()->getPosition(), entity.getParentNode()->getOrientation(),
+                       entity.getParentNode()->_getDerivedScale());
+
+    // test for hitting individual triangles on the mesh
+    bool new_closest_found = false;
+    Ogre::Real closest_distance = -1.0f;
+    for (int i = 0; i < static_cast<int>(index_count); i += 3) {
+        // check for a hit against this triangle
+        std::pair<bool, Ogre::Real> hit = Ogre::Math::intersects(
+            pickRay, vertices[indices[i]], vertices[indices[i + 1]], vertices[indices[i + 2]], true, false);
+
+        // if it was a hit check if its the closest
+        if (hit.first) {
+            if ((closest_distance < 0.0f) || (hit.second < closest_distance)) {
+                // this is the closest so far, save it off
+                closest_distance = hit.second;
+                new_closest_found = true;
+            }
+        }
+    }
+
+    // free the verticies and indicies memory
+    delete[] vertices;
+    delete[] indices;
+
+    return closest_distance;
+}
+
+static Ogre::MovableObject* QueryMovableObjectUsingBBox(Ogre::SceneManager& sceneManager, const Ogre::Ray& pickRay) {
+    auto* query = sceneManager.createRayQuery(Ogre::Ray());
+    query->setRay(pickRay);
+    query->setSortByDistance(true /*sort by depth*/, 1 /*only one result needed*/);
+    auto& results = query->execute();
+
+    if (results.empty()) {
+        sceneManager.destroyQuery(query);
+        return nullptr;
+    }
+    auto* movable = results.front().movable;
+    sceneManager.destroyQuery(query);
+    return movable;
+}
+
 } // namespace
 
 namespace SkeletonPicker {
 
 CJoint* Pick(PickContext& context, float x, float y) {
     const auto pickRay = context.camera.getCameraToViewportRay(x, y);
-    auto* query = context.sceneManager.createRayQuery(Ogre::Ray());
-    query->setRay(pickRay);
-    query->setSortByDistance(true /*sort by depth*/, 1 /*only one result needed*/);
-    auto& results = query->execute();
+    auto* pickedMovable = QueryMovableObjectUsingBBox(context.sceneManager, pickRay);
 
-    if (results.empty())
+    if (pickedMovable == nullptr)
         return nullptr;
 
-    auto jointIt = context.backwardsMapping.find(results.front().movable);
-
-    context.sceneManager.destroyQuery(query);
+    auto jointIt = context.backwardsMapping.find(pickedMovable);
 
     if (jointIt == context.backwardsMapping.end())
         return nullptr; // The picked entity is not a skeleton joint
 
     if (auto* entity = dynamic_cast<const Ogre::Entity*>(jointIt->first)) {
-        // mesh data to retrieve
-        size_t vertex_count;
-        size_t index_count;
-        Ogre::Vector3* vertices;
-        unsigned long* indices;
-
-        GetMeshInformation(entity->getMesh(), vertex_count, vertices, index_count, indices,
-                           entity->getParentNode()->getPosition(), entity->getParentNode()->getOrientation(),
-                           entity->getParentNode()->_getDerivedScale());
-
-        // test for hitting individual triangles on the mesh
-        bool new_closest_found = false;
-        Ogre::Real closest_distance = -1.0f;
-        for (int i = 0; i < static_cast<int>(index_count); i += 3) {
-            // check for a hit against this triangle
-            std::pair<bool, Ogre::Real> hit = Ogre::Math::intersects(
-                pickRay, vertices[indices[i]], vertices[indices[i + 1]], vertices[indices[i + 2]], true, false);
-
-            // if it was a hit check if its the closest
-            if (hit.first) {
-                if ((closest_distance < 0.0f) || (hit.second < closest_distance)) {
-                    // this is the closest so far, save it off
-                    closest_distance = hit.second;
-                    new_closest_found = true;
-                }
-            }
-        }
-
-        // free the verticies and indicies memory
-        delete[] vertices;
-        delete[] indices;
-
+        const float closest_distance = CalculateClosestDistanceToMesh(*entity, pickRay);
         // return the result
         if (closest_distance >= 0.0f) {
             // raycast success
@@ -183,5 +199,8 @@ CJoint* Pick(PickContext& context, float x, float y) {
             return nullptr;
         }
     }
+
+    // The picked MovableObject was in the backwards mapping but it was not an Entity, weird
+    return nullptr;
 }
 } // namespace SkeletonPicker
