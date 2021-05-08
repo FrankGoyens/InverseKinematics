@@ -18,6 +18,7 @@ class CameraMan;
 } // namespace OgreBites
 
 class CSkeleton;
+class CJoint;
 class SkeletonRenderer;
 
 class MinimalOgre final : public OgreBites::ApplicationContext, public OgreBites::InputListener {
@@ -46,9 +47,12 @@ class MinimalOgre final : public OgreBites::ApplicationContext, public OgreBites
 
     std::mutex m_pickRequestMutex;
     using PickRequest = std::optional<std::pair<int, int>>;
-    PickRequest m_pickRequest; // This would be set from the mouse input thread and read on the rendering thread
+    // This would be set from the mouse input thread and read on the rendering thread
+    // so lock m_pickRequestMutex for reading/writing
+    PickRequest m_pickRequest;
 
     void LoadSkeletonFromDisk();
 
+    CJoint* PickJointIfRequested();
     PickRequest ConsumePickRequest();
 };

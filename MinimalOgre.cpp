@@ -111,18 +111,7 @@ bool MinimalOgre::frameRenderingQueued(const Ogre::FrameEvent& evt) {
 
     m_skeleton->draw(*m_skeletonRenderer);
 
-    CJoint* pickedJoint = nullptr;
-
-    const auto currentPickRequest = ConsumePickRequest();
-    const auto* camera = m_sceneManager->getCamera("myCam");
-    if (currentPickRequest && camera) {
-        const auto screenWidth = camera->getViewport()->getActualWidth();
-        const auto screenHeight = camera->getViewport()->getActualHeight();
-        const auto x = static_cast<Ogre::Real>(currentPickRequest->first) / screenWidth;
-        const auto y = static_cast<Ogre::Real>(currentPickRequest->second) / screenHeight;
-        pickedJoint = SkeletonPicker::Pick(
-            SkeletonPicker::PickContext{*m_sceneManager, *camera, m_skeletonRenderer->GetBackwardsMapping()}, x, y);
-    }
+    CJoint* pickedJoint = PickJointIfRequested();
 
     if (pickedJoint) {
         std::cout << "I picked the thing" << std::endl;
@@ -149,6 +138,22 @@ MinimalOgre::PickRequest MinimalOgre::ConsumePickRequest() {
     const auto currentPickRequest = m_pickRequest;
     m_pickRequest = {};
     return currentPickRequest;
+}
+
+CJoint* MinimalOgre::PickJointIfRequested() {
+    CJoint* pickedJoint = nullptr;
+
+    const auto currentPickRequest = ConsumePickRequest();
+    const auto* camera = m_sceneManager->getCamera("myCam");
+    if (currentPickRequest && camera) {
+        const auto screenWidth = camera->getViewport()->getActualWidth();
+        const auto screenHeight = camera->getViewport()->getActualHeight();
+        const auto x = static_cast<Ogre::Real>(currentPickRequest->first) / screenWidth;
+        const auto y = static_cast<Ogre::Real>(currentPickRequest->second) / screenHeight;
+        pickedJoint = SkeletonPicker::Pick(
+            SkeletonPicker::PickContext{*m_sceneManager, *camera, m_skeletonRenderer->GetBackwardsMapping()}, x, y);
+    }
+    return pickedJoint;
 }
 
 bool MinimalOgre::mousePressed(const OgreBites::MouseButtonEvent& evt) {
