@@ -49,4 +49,6 @@ class MinimalOgre final : public OgreBites::ApplicationContext, public OgreBites
     PickRequest m_pickRequest; // This would be set from the mouse input thread and read on the rendering thread
 
     void LoadSkeletonFromDisk();
+
+    PickRequest ConsumePickRequest();
 };

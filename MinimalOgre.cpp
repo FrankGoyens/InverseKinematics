@@ -111,15 +111,9 @@ bool MinimalOgre::frameRenderingQueued(const Ogre::FrameEvent& evt) {
 
     m_skeleton->draw(*m_skeletonRenderer);
 
-    PickRequest currentPickRequest;
-    {
-        std::scoped_lock(m_pickRequestMutex);
-        currentPickRequest = m_pickRequest;
-        m_pickRequest = {};
-    }
-
     CJoint* pickedJoint = nullptr;
 
+    const auto currentPickRequest = ConsumePickRequest();
     const auto* camera = m_sceneManager->getCamera("myCam");
     if (currentPickRequest && camera) {
         const auto screenWidth = camera->getViewport()->getActualWidth();
@@ -148,6 +142,13 @@ bool MinimalOgre::keyPressed(const OgreBites::KeyboardEvent& evt) {
 void MinimalOgre::LoadSkeletonFromDisk() {
     m_skeleton = std::make_unique<CSkeleton>("skeleton.skl");
     m_skeleton->setTransformMatrix(glm::scale(m_skeleton->getTransformMatrix(), {100, 100, 100}));
+}
+
+MinimalOgre::PickRequest MinimalOgre::ConsumePickRequest() {
+    std::scoped_lock(m_pickRequestMutex);
+    const auto currentPickRequest = m_pickRequest;
+    m_pickRequest = {};
+    return currentPickRequest;
 }
 
 bool MinimalOgre::mousePressed(const OgreBites::MouseButtonEvent& evt) {
