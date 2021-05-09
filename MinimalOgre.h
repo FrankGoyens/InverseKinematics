@@ -11,6 +11,8 @@
 
 #include <OgreHeaderSuffix.h>
 
+#include <SkeletonPicker.h>
+
 namespace OgreBites {
 class TrayManager;
 class SceneManager;
@@ -32,6 +34,8 @@ class MinimalOgre final : public OgreBites::ApplicationContext, public OgreBites
 
     bool keyPressed(const OgreBites::KeyboardEvent& evt) override;
     bool mousePressed(const OgreBites::MouseButtonEvent& evt) override;
+    bool mouseReleased(const OgreBites::MouseButtonEvent& evt) override;
+    bool mouseMoved(const OgreBites::MouseMotionEvent& evt) override;
 
     bool frameRenderingQueued(const Ogre::FrameEvent&) override;
     bool frameEnded(const Ogre::FrameEvent&) override;
@@ -51,8 +55,13 @@ class MinimalOgre final : public OgreBites::ApplicationContext, public OgreBites
     // so lock m_pickRequestMutex for reading/writing
     PickRequest m_pickRequest;
 
+    std::mutex m_pickDepthMutex;
+    std::optional<float> m_pickDepth; // Contains a value when dragging
+
     void LoadSkeletonFromDisk();
 
-    CJoint* PickJointIfRequested();
+    std::optional<SkeletonPicker::Result> PickJointIfRequested();
+    std::pair<float, float> MousePositionToScreenSpace(const std::pair<int, int>& mousePos, const Ogre::Camera&);
+    void RequestPick(const std::pair<int, int>& mousePosition);
     PickRequest ConsumePickRequest();
 };

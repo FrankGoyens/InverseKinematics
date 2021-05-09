@@ -176,31 +176,34 @@ static Ogre::MovableObject* QueryMovableObjectUsingBBox(Ogre::SceneManager& scen
 
 namespace SkeletonPicker {
 
-CJoint* Pick(PickContext& context, float x, float y) {
+std::optional<Result> Pick(PickContext& context, float x, float y) {
     const auto pickRay = context.camera.getCameraToViewportRay(x, y);
     auto* pickedMovable = QueryMovableObjectUsingBBox(context.sceneManager, pickRay);
 
     if (pickedMovable == nullptr)
-        return nullptr;
+        return {};
 
     auto jointIt = context.backwardsMapping.find(pickedMovable);
 
     if (jointIt == context.backwardsMapping.end())
-        return nullptr; // The picked entity is not a skeleton joint
+        return {}; // The picked entity is not a skeleton joint
 
     if (auto* entity = dynamic_cast<const Ogre::Entity*>(jointIt->first)) {
         const float closest_distance = CalculateClosestDistanceToMesh(*entity, pickRay);
         // return the result
         if (closest_distance >= 0.0f) {
             // raycast success
-            return jointIt->second;
+            return {Result{std::ref(*jointIt->second),
+                           closest_distance,
+                           {pickRay.getOrigin().x, pickRay.getOrigin().y, pickRay.getOrigin().z},
+                           {pickRay.getDirection().x, pickRay.getDirection().y, pickRay.getDirection().z}}};
         } else {
             // raycast failed
-            return nullptr;
+            return {};
         }
     }
 
     // The picked MovableObject was in the backwards mapping but it was not an Entity, weird
-    return nullptr;
+    return {};
 }
 } // namespace SkeletonPicker

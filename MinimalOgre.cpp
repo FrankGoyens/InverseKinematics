@@ -111,15 +111,44 @@ bool MinimalOgre::frameRenderingQueued(const Ogre::FrameEvent& evt) {
 
     m_skeleton->draw(*m_skeletonRenderer);
 
-    CJoint* pickedJoint = PickJointIfRequested();
+    if (m_pickDepth) {
+        if (const auto mousePosition = ConsumePickRequest()) {
+            const auto* camera = m_sceneManager->getCamera("myCam");
+            if (camera) {
+                const auto screenPosition = MousePositionToScreenSpace(*mousePosition, *camera);
+                const auto pickRay = camera->getCameraToViewportRay(screenPosition.first, screenPosition.second);
+                const auto pickPoint = pickRay.getOrigin() + *m_pickDepth * pickRay.getDirection();
+                m_skeletonRenderer->TargetSphere({pickPoint.x, pickPoint.y, pickPoint.z, 1.f});
+                RequestPick(*mousePosition); // Set the current mouseposition in case the mouse does not move anymore
+            }
+        }
 
-    if (pickedJoint) {
-        std::cout << "I picked the thing" << std::endl;
+    } else {
+        const auto pickResult = PickJointIfRequested();
+
+        if (pickResult) {
+            m_pickDepth = pickResult->depth;
+        }
     }
     return true;
 }
 
 bool MinimalOgre::frameEnded(const Ogre::FrameEvent&) { return true; }
+
+bool MinimalOgre::mouseReleased(const OgreBites::MouseButtonEvent& evt) {
+    {
+        std::scoped_lock(m_pickDepthMutex);
+        m_pickDepth = {};
+    }
+    return true;
+}
+
+bool MinimalOgre::mouseMoved(const OgreBites::MouseMotionEvent& evt) {
+    if (m_pickDepth)
+        // There is a pick depth (from a previous pick) so request picking to drag the target
+        RequestPick({evt.x, evt.y});
+    return true;
+}
 
 bool MinimalOgre::keyPressed(const OgreBites::KeyboardEvent& evt) {
     if (evt.keysym.sym == OgreBites::SDLK_ESCAPE) {
@@ -133,6 +162,20 @@ void MinimalOgre::LoadSkeletonFromDisk() {
     m_skeleton->setTransformMatrix(glm::scale(m_skeleton->getTransformMatrix(), {100, 100, 100}));
 }
 
+std::pair<float, float> MinimalOgre::MousePositionToScreenSpace(const std::pair<int, int>& mousePos,
+                                                                const Ogre::Camera& camera) {
+    const auto screenWidth = camera.getViewport()->getActualWidth();
+    const auto screenHeight = camera.getViewport()->getActualHeight();
+    const auto x = static_cast<Ogre::Real>(mousePos.first) / screenWidth;
+    const auto y = static_cast<Ogre::Real>(mousePos.second) / screenHeight;
+    return {x, y};
+}
+
+void MinimalOgre::RequestPick(const std::pair<int, int>& mousePosition) {
+    std::scoped_lock lock(m_pickRequestMutex);
+    m_pickRequest = mousePosition;
+}
+
 MinimalOgre::PickRequest MinimalOgre::ConsumePickRequest() {
     std::scoped_lock(m_pickRequestMutex);
     const auto currentPickRequest = m_pickRequest;
@@ -140,26 +183,18 @@ MinimalOgre::PickRequest MinimalOgre::ConsumePickRequest() {
     return currentPickRequest;
 }
 
-CJoint* MinimalOgre::PickJointIfRequested() {
-    CJoint* pickedJoint = nullptr;
-
+std::optional<SkeletonPicker::Result> MinimalOgre::PickJointIfRequested() {
     const auto currentPickRequest = ConsumePickRequest();
     const auto* camera = m_sceneManager->getCamera("myCam");
     if (currentPickRequest && camera) {
-        const auto screenWidth = camera->getViewport()->getActualWidth();
-        const auto screenHeight = camera->getViewport()->getActualHeight();
-        const auto x = static_cast<Ogre::Real>(currentPickRequest->first) / screenWidth;
-        const auto y = static_cast<Ogre::Real>(currentPickRequest->second) / screenHeight;
-        pickedJoint = SkeletonPicker::Pick(
+        auto [x, y] = MousePositionToScreenSpace(*currentPickRequest, *camera);
+        return SkeletonPicker::Pick(
             SkeletonPicker::PickContext{*m_sceneManager, *camera, m_skeletonRenderer->GetBackwardsMapping()}, x, y);
     }
-    return pickedJoint;
+    return {};
 }
 
 bool MinimalOgre::mousePressed(const OgreBites::MouseButtonEvent& evt) {
-    {
-        std::scoped_lock lock(m_pickRequestMutex);
-        m_pickRequest = std::make_pair(evt.x, evt.y);
-    }
+    RequestPick({evt.x, evt.y});
     return true;
 }

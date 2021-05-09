@@ -29,6 +29,9 @@ class SkeletonRenderer final {
     void Line(const glm::vec4& start, const glm::vec4& end);
     void JointSphere(CJoint& joint, const glm::vec4& position);
 
+    //! \brief the sphere that indicates where the joint is being dragged to
+    void TargetSphere(const glm::vec4& position);
+
     using BackwardsMapping = std::unordered_map<const Ogre::MovableObject*, CJoint*>;
     const BackwardsMapping& GetBackwardsMapping() const { return m_backwardsMapping; }
 
@@ -41,5 +44,5 @@ class SkeletonRenderer final {
     std::vector<Ogre::ManualObject*> m_lineEntities;
     std::vector<Ogre::Entity*> m_sphereEntities;
 
-    Ogre::Entity& Sphere(const glm::vec4& position);
+    Ogre::Entity& Sphere(const glm::vec4& position, const std::string& materialName);
 };

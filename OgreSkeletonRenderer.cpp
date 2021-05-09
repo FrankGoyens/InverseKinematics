@@ -51,14 +51,19 @@ void SkeletonRenderer::Line(const glm::vec4& start, const glm::vec4& end) {
 }
 
 void SkeletonRenderer::JointSphere(CJoint& joint, const glm::vec4& position) {
-    auto& sphere = Sphere(position);
+    auto& sphere = Sphere(position, "Template/Blue");
     m_sphereEntities.push_back(&sphere);
     m_backwardsMapping.emplace(&sphere, &joint);
 }
 
-Ogre::Entity& SkeletonRenderer::Sphere(const glm::vec4& position) {
+void SkeletonRenderer::TargetSphere(const glm::vec4& position) {
+    auto& sphere = Sphere(position, "Template/Red");
+    m_sphereEntities.push_back(&sphere);
+}
+
+Ogre::Entity& SkeletonRenderer::Sphere(const glm::vec4& position, const std::string& materialName) {
     Ogre::Entity* ent = m_sceneManager->createEntity("sphere.mesh");
-    auto material = Ogre::MaterialManager::getSingleton().getByName("Template/Blue");
+    auto material = Ogre::MaterialManager::getSingleton().getByName(materialName);
     ent->setMaterial(material);
 
     Ogre::SceneNode* node = m_skeletonRootNode->createChildSceneNode();
