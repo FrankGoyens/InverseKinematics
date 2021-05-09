@@ -2,6 +2,7 @@
 
 #include <mutex>
 #include <optional>
+#include <queue>
 
 #include <OgreHeaderPrefix.h>
 
@@ -21,7 +22,8 @@ class CameraMan;
 
 namespace Ogre {
 class SceneNode;
-}
+class Entity;
+} // namespace Ogre
 
 class CSkeleton;
 class CJoint;
@@ -66,6 +68,8 @@ class MinimalOgre final : public OgreBites::ApplicationContext, public OgreBites
     std::optional<float> m_pickDepth;
 
     Ogre::SceneNode* m_cameraNode = nullptr;
+
+    std::queue<Ogre::Entity*> m_allocatedSphereJoints; // A cache to prevent recreating all skeleton joints from scratch
 
     void LoadSkeletonFromDisk();
 

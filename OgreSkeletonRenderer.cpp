@@ -12,14 +12,21 @@
 
 #include <OgreHeaderSuffix.h>
 
-SkeletonRenderer::SkeletonRenderer(Ogre::Root& ogreRoot, Ogre::SceneManager& sceneManager)
-    : m_ogreRoot(&ogreRoot), m_sceneManager(&sceneManager) {
+SkeletonRenderer::SkeletonRenderer(Ogre::Root& ogreRoot, Ogre::SceneManager& sceneManager,
+                                   std::queue<Ogre::Entity*> allocatedSpheres)
+    : m_ogreRoot(&ogreRoot), m_sceneManager(&sceneManager), m_preAllocatedSpheres(std::move(allocatedSpheres)) {
     m_skeletonRootNode = sceneManager.getRootSceneNode()->createChildSceneNode();
 }
 
 SkeletonRenderer::~SkeletonRenderer() {
-    for (auto* sphere : m_sphereEntities)
-        m_sceneManager->destroyEntity(sphere);
+    for (auto* entity : m_allocatedSpheres)
+        m_sceneManager->destroyEntity(entity);
+
+    while (!m_preAllocatedSpheres.empty()) {
+        m_sceneManager->destroyEntity(m_preAllocatedSpheres.front());
+        m_preAllocatedSpheres.pop();
+    }
+
     for (auto* line : m_lineEntities)
         m_sceneManager->destroyManualObject(line);
     m_skeletonRootNode->removeAndDestroyAllChildren();
@@ -61,8 +68,22 @@ void SkeletonRenderer::TargetSphere(const glm::vec4& position) {
     m_sphereEntities.push_back(&sphere);
 }
 
+std::queue<Ogre::Entity*>&& SkeletonRenderer::YieldAllocatedJointSpheres() && {
+    for (auto* entity : m_allocatedSpheres)
+        m_preAllocatedSpheres.push(entity);
+    m_allocatedSpheres.clear();
+    return std::move(m_preAllocatedSpheres);
+}
+
 Ogre::Entity& SkeletonRenderer::Sphere(const glm::vec4& position, const std::string& materialName) {
-    Ogre::Entity* ent = m_sceneManager->createEntity("sphere.mesh");
+    Ogre::Entity* ent;
+    if (m_preAllocatedSpheres.empty()) {
+        ent = m_sceneManager->createEntity("sphere.mesh");
+    } else {
+        ent = m_preAllocatedSpheres.front();
+        m_preAllocatedSpheres.pop();
+    }
+    m_allocatedSpheres.push_back(ent);
     auto material = Ogre::MaterialManager::getSingleton().getByName(materialName);
     ent->setMaterial(material);
 

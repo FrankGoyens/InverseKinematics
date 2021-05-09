@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <queue>
 #include <unordered_map>
 
 #include <glm/mat4x4.hpp>
@@ -19,7 +20,7 @@ class CJoint;
 
 class SkeletonRenderer final {
   public:
-    SkeletonRenderer(Ogre::Root&, Ogre::SceneManager&);
+    SkeletonRenderer(Ogre::Root&, Ogre::SceneManager&, std::queue<Ogre::Entity*> allocatedSpheres = {});
     ~SkeletonRenderer();
     SkeletonRenderer(const SkeletonRenderer&) = delete;
     SkeletonRenderer(SkeletonRenderer&&) = delete;
@@ -35,6 +36,8 @@ class SkeletonRenderer final {
     using BackwardsMapping = std::unordered_map<const Ogre::MovableObject*, CJoint*>;
     const BackwardsMapping& GetBackwardsMapping() const { return m_backwardsMapping; }
 
+    std::queue<Ogre::Entity*>&& YieldAllocatedJointSpheres() &&;
+
   private:
     Ogre::Root* m_ogreRoot = nullptr;
     Ogre::SceneNode* m_skeletonRootNode = nullptr;
@@ -43,6 +46,9 @@ class SkeletonRenderer final {
     BackwardsMapping m_backwardsMapping;
     std::vector<Ogre::ManualObject*> m_lineEntities;
     std::vector<Ogre::Entity*> m_sphereEntities;
+
+    std::vector<Ogre::Entity*> m_allocatedSpheres;
+    std::queue<Ogre::Entity*> m_preAllocatedSpheres;
 
     Ogre::Entity& Sphere(const glm::vec4& position, const std::string& materialName);
 };
