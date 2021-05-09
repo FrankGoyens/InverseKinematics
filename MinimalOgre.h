@@ -19,6 +19,10 @@ class SceneManager;
 class CameraMan;
 } // namespace OgreBites
 
+namespace Ogre {
+class SceneNode;
+}
+
 class CSkeleton;
 class CJoint;
 class SkeletonRenderer;
@@ -42,7 +46,8 @@ class MinimalOgre final : public OgreBites::ApplicationContext, public OgreBites
 
   private:
     OgreBites::TrayManager* m_trays = nullptr;
-    OgreBites::CameraMan* m_cameraMan = nullptr;
+    std::unique_ptr<OgreBites::CameraMan> m_cameraMan;
+    bool m_cameraManAttached = false;
 
     Ogre::SceneManager* m_sceneManager = nullptr;
 
@@ -60,7 +65,12 @@ class MinimalOgre final : public OgreBites::ApplicationContext, public OgreBites
     // Contains a value until the mouse is released
     std::optional<float> m_pickDepth;
 
+    Ogre::SceneNode* m_cameraNode = nullptr;
+
     void LoadSkeletonFromDisk();
+
+    void AttachCameraMan();
+    void DetachCameraMan();
 
     std::optional<SkeletonPicker::Result> PickJointIfRequested();
     void DragJointToMousePositionAtPickDepth();

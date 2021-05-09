@@ -25,7 +25,7 @@
 
 MinimalOgre::MinimalOgre() : OgreBites::ApplicationContext("OgreTutorialApp") {}
 
-MinimalOgre::~MinimalOgre() { delete m_cameraMan; }
+MinimalOgre::~MinimalOgre() {}
 
 void MinimalOgre::loadResources() {
     enableShaderCache();
@@ -74,15 +74,15 @@ void MinimalOgre::setup() { // do not forget to call the base first
     lightNode->attachObject(light);
 
     // also need to tell where we are
-    Ogre::SceneNode* camNode = m_sceneManager->getRootSceneNode()->createChildSceneNode();
-    camNode->setPosition(0, 0, 15);
-    camNode->lookAt(Ogre::Vector3(0, 0, -1), Ogre::Node::TS_PARENT);
+    m_cameraNode = m_sceneManager->getRootSceneNode()->createChildSceneNode();
+    m_cameraNode->setPosition(0, 0, 15);
+    m_cameraNode->lookAt(Ogre::Vector3(0, 0, -1), Ogre::Node::TS_PARENT);
 
     // create the camera
     Ogre::Camera* cam = m_sceneManager->createCamera("myCam");
     cam->setNearClipDistance(5); // specific to this sample
     cam->setAutoAspectRatio(true);
-    camNode->attachObject(cam);
+    m_cameraNode->attachObject(cam);
 
     // and tell it to render into the main window
     getRenderWindow()->addViewport(cam);
@@ -90,12 +90,11 @@ void MinimalOgre::setup() { // do not forget to call the base first
     m_skeletonRenderer = std::make_unique<SkeletonRenderer>(*getRoot(), *m_sceneManager);
     LoadSkeletonFromDisk();
 
-    // Set up the cameraman
-    m_cameraMan = new OgreBites::CameraMan(camNode);
+    m_cameraMan = std::make_unique<OgreBites::CameraMan>(m_cameraNode);
     m_cameraMan->setStyle(OgreBites::CameraStyle::CS_ORBIT);
     m_cameraMan->setYawPitchDist(Ogre::Radian(0), Ogre::Radian(0.3f), 50);
 
-    addInputListener(m_cameraMan);
+    AttachCameraMan();
 }
 
 void MinimalOgre::shutdown() {
@@ -108,15 +107,22 @@ bool MinimalOgre::frameRenderingQueued(const Ogre::FrameEvent& evt) {
     OgreBites::ApplicationContext::frameRenderingQueued(evt);
 
     m_skeletonRenderer = std::make_unique<SkeletonRenderer>(*getRoot(), *m_sceneManager);
+    bool cameraManNeeded = true;
 
     m_skeleton->draw(*m_skeletonRenderer);
 
     if (m_pickDepth) {
         DragJointToMousePositionAtPickDepth();
-    } else {
-        if (const auto pickResult = PickJointIfRequested())
-            m_pickDepth = pickResult->depth;
+        cameraManNeeded = false;
+    } else if (const auto pickResult = PickJointIfRequested()) {
+        m_pickDepth = pickResult->depth;
     }
+
+    if (cameraManNeeded)
+        AttachCameraMan();
+    else
+        DetachCameraMan();
+
     return true;
 }
 
@@ -158,6 +164,13 @@ std::pair<float, float> MinimalOgre::MousePositionToScreenSpace(const std::pair<
     return {x, y};
 }
 
+void MinimalOgre::AttachCameraMan() {
+    if (!m_cameraManAttached) {
+        m_cameraManAttached = true;
+        addInputListener(m_cameraMan.get());
+    }
+}
+
 void MinimalOgre::RequestPick(const std::pair<int, int>& mousePosition) {
     std::scoped_lock lock(m_pickRequestMutex);
     m_pickRequest = mousePosition;
@@ -168,6 +181,18 @@ MinimalOgre::PickRequest MinimalOgre::ConsumePickRequest() {
     const auto currentPickRequest = m_pickRequest;
     m_pickRequest = {};
     return currentPickRequest;
+}
+
+void MinimalOgre::DetachCameraMan() {
+    if (m_cameraManAttached) {
+        m_cameraManAttached = false;
+        removeInputListener(m_cameraMan.get());
+
+        // Do this manually, or the camera man might think the mouse is still down when set up again
+        OgreBites::MouseButtonEvent evt;
+        evt.button = OgreBites::ButtonType::BUTTON_LEFT;
+        m_cameraMan->mouseReleased(evt);
+    }
 }
 
 void MinimalOgre::DragJointToMousePositionAtPickDepth() {
