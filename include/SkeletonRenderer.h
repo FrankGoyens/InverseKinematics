@@ -19,7 +19,7 @@ class CJoint;
 
 class SkeletonRenderer final {
   public:
-    SkeletonRenderer(Ogre::Root&, Ogre::SceneManager&); // TODO get SkeletonPicker as weak_ptr argument
+    SkeletonRenderer(Ogre::Root&, Ogre::SceneManager&);
     ~SkeletonRenderer();
     SkeletonRenderer(const SkeletonRenderer&) = delete;
     SkeletonRenderer(SkeletonRenderer&&) = delete;
