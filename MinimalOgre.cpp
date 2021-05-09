@@ -112,23 +112,10 @@ bool MinimalOgre::frameRenderingQueued(const Ogre::FrameEvent& evt) {
     m_skeleton->draw(*m_skeletonRenderer);
 
     if (m_pickDepth) {
-        if (const auto mousePosition = ConsumePickRequest()) {
-            const auto* camera = m_sceneManager->getCamera("myCam");
-            if (camera) {
-                const auto screenPosition = MousePositionToScreenSpace(*mousePosition, *camera);
-                const auto pickRay = camera->getCameraToViewportRay(screenPosition.first, screenPosition.second);
-                const auto pickPoint = pickRay.getOrigin() + *m_pickDepth * pickRay.getDirection();
-                m_skeletonRenderer->TargetSphere({pickPoint.x, pickPoint.y, pickPoint.z, 1.f});
-                RequestPick(*mousePosition); // Set the current mouseposition in case the mouse does not move anymore
-            }
-        }
-
+        DragJointToMousePositionAtPickDepth();
     } else {
-        const auto pickResult = PickJointIfRequested();
-
-        if (pickResult) {
+        if (const auto pickResult = PickJointIfRequested())
             m_pickDepth = pickResult->depth;
-        }
     }
     return true;
 }
@@ -181,6 +168,19 @@ MinimalOgre::PickRequest MinimalOgre::ConsumePickRequest() {
     const auto currentPickRequest = m_pickRequest;
     m_pickRequest = {};
     return currentPickRequest;
+}
+
+void MinimalOgre::DragJointToMousePositionAtPickDepth() {
+    if (const auto mousePosition = ConsumePickRequest()) {
+        const auto* camera = m_sceneManager->getCamera("myCam");
+        if (camera) {
+            const auto screenPosition = MousePositionToScreenSpace(*mousePosition, *camera);
+            const auto pickRay = camera->getCameraToViewportRay(screenPosition.first, screenPosition.second);
+            const auto pickPoint = pickRay.getOrigin() + *m_pickDepth * pickRay.getDirection();
+            m_skeletonRenderer->TargetSphere({pickPoint.x, pickPoint.y, pickPoint.z, 1.f});
+            RequestPick(*mousePosition); // Set the current mouseposition in case the mouse does not move anymore
+        }
+    }
 }
 
 std::optional<SkeletonPicker::Result> MinimalOgre::PickJointIfRequested() {

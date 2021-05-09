@@ -56,11 +56,14 @@ class MinimalOgre final : public OgreBites::ApplicationContext, public OgreBites
     PickRequest m_pickRequest;
 
     std::mutex m_pickDepthMutex;
-    std::optional<float> m_pickDepth; // Contains a value when dragging
+    // The depth at which a joint is picked
+    // Contains a value until the mouse is released
+    std::optional<float> m_pickDepth;
 
     void LoadSkeletonFromDisk();
 
     std::optional<SkeletonPicker::Result> PickJointIfRequested();
+    void DragJointToMousePositionAtPickDepth();
     std::pair<float, float> MousePositionToScreenSpace(const std::pair<int, int>& mousePos, const Ogre::Camera&);
     void RequestPick(const std::pair<int, int>& mousePosition);
     PickRequest ConsumePickRequest();
