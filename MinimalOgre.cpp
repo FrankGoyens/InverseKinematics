@@ -111,11 +111,14 @@ bool MinimalOgre::frameRenderingQueued(const Ogre::FrameEvent& evt) {
 
     m_skeleton->draw(*m_skeletonRenderer);
 
-    if (m_pickDepth) {
-        DragJointToMousePositionAtPickDepth();
-        cameraManNeeded = false;
-    } else if (const auto pickResult = PickJointIfRequested()) {
-        m_pickDepth = pickResult->depth;
+    {
+        std::scoped_lock pickDepthLock(m_pickDepthMutex);
+        if (m_pickDepth) {
+            DragJointToMousePositionAtPickDepth();
+            cameraManNeeded = false;
+        } else if (const auto pickResult = PickJointIfRequested()) {
+            m_pickDepth = pickResult->depth;
+        }
     }
 
     if (cameraManNeeded)
