@@ -25,7 +25,17 @@
 
 MinimalOgre::MinimalOgre() : OgreBites::ApplicationContext("OgreTutorialApp") {}
 
-MinimalOgre::~MinimalOgre() {}
+void DeallocateEntityQueue(Ogre::SceneManager& sceneManager, std::queue<Ogre::Entity*>& queue) {
+    while (!queue.empty()) {
+        sceneManager.destroyEntity(queue.front());
+        queue.pop();
+    }
+}
+
+MinimalOgre::~MinimalOgre() {
+    DeallocateEntityQueue(*m_sceneManager, m_allocatedLines);
+    DeallocateEntityQueue(*m_sceneManager, m_allocatedSphereJoints);
+}
 
 void MinimalOgre::loadResources() {
     enableShaderCache();
