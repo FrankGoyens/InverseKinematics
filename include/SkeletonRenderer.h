@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <queue>
 #include <unordered_map>
 
@@ -34,6 +35,8 @@ class SkeletonRenderer final {
     //! \brief the sphere that indicates where the joint is being dragged to
     void TargetSphere(const glm::vec4& position);
 
+    std::optional<glm::vec3> GetJointPosition(const CJoint& joint) const;
+
     using BackwardsMapping = std::unordered_map<const Ogre::MovableObject*, CJoint*>;
     const BackwardsMapping& GetBackwardsMapping() const { return m_backwardsMapping; }
 
@@ -46,6 +49,8 @@ class SkeletonRenderer final {
     Ogre::SceneManager* m_sceneManager = nullptr;
 
     BackwardsMapping m_backwardsMapping;
+    std::unordered_map<const CJoint*, glm::vec3> m_jointPositionMapping;
+
     std::vector<Ogre::Entity*> m_sphereEntities, m_lineEntities;
 
     std::vector<Ogre::Entity*> m_allocatedSpheres;

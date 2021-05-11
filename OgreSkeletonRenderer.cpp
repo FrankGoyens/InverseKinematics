@@ -123,11 +123,19 @@ void SkeletonRenderer::JointSphere(CJoint& joint, const glm::vec4& position) {
     auto& sphere = Sphere(position, "Template/Blue");
     m_sphereEntities.push_back(&sphere);
     m_backwardsMapping.emplace(&sphere, &joint);
+    m_jointPositionMapping.emplace(&joint, FromVec4(position));
 }
 
 void SkeletonRenderer::TargetSphere(const glm::vec4& position) {
     auto& sphere = Sphere(position, "Template/Red");
     m_sphereEntities.push_back(&sphere);
+}
+
+std::optional<glm::vec3> SkeletonRenderer::GetJointPosition(const CJoint& joint) const {
+    const auto it = m_jointPositionMapping.find(&joint);
+    if (it != m_jointPositionMapping.end())
+        return it->second;
+    return {};
 }
 
 template <typename Entity>

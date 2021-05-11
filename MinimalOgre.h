@@ -66,6 +66,8 @@ class MinimalOgre final : public OgreBites::ApplicationContext, public OgreBites
     // The depth at which a joint is picked
     // Contains a value until the mouse is released
     std::optional<float> m_pickDepth;
+    std::pair<int, int> m_previousMousePosition;
+    CJoint* m_pickedJoint = nullptr;
 
     Ogre::SceneNode* m_cameraNode = nullptr;
 
@@ -78,7 +80,7 @@ class MinimalOgre final : public OgreBites::ApplicationContext, public OgreBites
     void DetachCameraMan();
 
     std::optional<SkeletonPicker::Result> PickJointIfRequested();
-    void DragJointToMousePositionAtPickDepth();
+    void DragJointToMousePositionAtPickDepth(const std::pair<int, int>& mousePosition);
     std::pair<float, float> MousePositionToScreenSpace(const std::pair<int, int>& mousePos, const Ogre::Camera&);
     void RequestPick(const std::pair<int, int>& mousePosition);
     PickRequest ConsumePickRequest();

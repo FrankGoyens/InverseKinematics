@@ -127,10 +127,17 @@ bool MinimalOgre::frameRenderingQueued(const Ogre::FrameEvent& evt) {
     {
         std::scoped_lock pickDepthLock(m_pickDepthMutex);
         if (m_pickDepth) {
-            DragJointToMousePositionAtPickDepth();
+            if (const auto mousePosition = ConsumePickRequest()) {
+                DragJointToMousePositionAtPickDepth(*mousePosition);
+                m_previousMousePosition = *mousePosition;
+            } else {
+                DragJointToMousePositionAtPickDepth(m_previousMousePosition);
+            }
+
             cameraManNeeded = false;
         } else if (const auto pickResult = PickJointIfRequested()) {
             m_pickDepth = pickResult->depth;
+            m_pickedJoint = &pickResult->joint.get();
         }
     }
 
@@ -211,16 +218,16 @@ void MinimalOgre::DetachCameraMan() {
     }
 }
 
-void MinimalOgre::DragJointToMousePositionAtPickDepth() {
-    if (const auto mousePosition = ConsumePickRequest()) {
-        const auto* camera = m_sceneManager->getCamera("myCam");
-        if (camera) {
-            const auto screenPosition = MousePositionToScreenSpace(*mousePosition, *camera);
-            const auto pickRay = camera->getCameraToViewportRay(screenPosition.first, screenPosition.second);
-            const auto pickPoint = pickRay.getOrigin() + *m_pickDepth * pickRay.getDirection();
-            m_skeletonRenderer->TargetSphere({pickPoint.x, pickPoint.y, pickPoint.z, 1.f});
-            RequestPick(*mousePosition); // Set the current mouseposition in case the mouse does not move anymore
-        }
+void MinimalOgre::DragJointToMousePositionAtPickDepth(const std::pair<int, int>& mousePosition) {
+    const auto* camera = m_sceneManager->getCamera("myCam");
+    if (camera) {
+        const auto screenPosition = MousePositionToScreenSpace(mousePosition, *camera);
+        const auto pickRay = camera->getCameraToViewportRay(screenPosition.first, screenPosition.second);
+        const auto pickPoint = pickRay.getOrigin() + *m_pickDepth * pickRay.getDirection();
+        const glm::vec3 glmPickPoint(pickPoint.x, pickPoint.y, pickPoint.z);
+        m_skeletonRenderer->TargetSphere({pickPoint.x, pickPoint.y, pickPoint.z, 1.f});
+        if (const auto jointPosition = m_skeletonRenderer->GetJointPosition(*m_pickedJoint))
+            m_skeleton->moveJoint(m_pickedJoint, glmPickPoint, -(glmPickPoint - *jointPosition));
     }
 }
 
