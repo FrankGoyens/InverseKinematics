@@ -20,7 +20,8 @@ class CJoint;
 
 class SkeletonRenderer final {
   public:
-    SkeletonRenderer(Ogre::Root&, Ogre::SceneManager&, std::queue<Ogre::Entity*> allocatedSpheres = {});
+    SkeletonRenderer(Ogre::Root&, Ogre::SceneManager&, std::queue<Ogre::Entity*> allocatedSpheres = {},
+                     std::queue<Ogre::Entity*> allocatedLines = {});
     ~SkeletonRenderer();
     SkeletonRenderer(const SkeletonRenderer&) = delete;
     SkeletonRenderer(SkeletonRenderer&&) = delete;
@@ -37,6 +38,7 @@ class SkeletonRenderer final {
     const BackwardsMapping& GetBackwardsMapping() const { return m_backwardsMapping; }
 
     std::queue<Ogre::Entity*>&& YieldAllocatedJointSpheres() &&;
+    std::queue<Ogre::Entity*>&& YieldAllocatedLines() &&;
 
   private:
     Ogre::Root* m_ogreRoot = nullptr;
@@ -44,11 +46,16 @@ class SkeletonRenderer final {
     Ogre::SceneManager* m_sceneManager = nullptr;
 
     BackwardsMapping m_backwardsMapping;
-    std::vector<Ogre::ManualObject*> m_lineEntities;
-    std::vector<Ogre::Entity*> m_sphereEntities;
+    std::vector<Ogre::Entity*> m_sphereEntities, m_lineEntities;
 
     std::vector<Ogre::Entity*> m_allocatedSpheres;
     std::queue<Ogre::Entity*> m_preAllocatedSpheres;
 
+    std::vector<Ogre::Entity*> m_allocatedLineEntities;
+    std::queue<Ogre::Entity*> m_preAllocatedLineEntities;
+
     Ogre::Entity& Sphere(const glm::vec4& position, const std::string& materialName);
+
+    Ogre::Entity& GetAllocatedOrNewSphere();
+    Ogre::Entity& GetAllocatedOrNewLine();
 };

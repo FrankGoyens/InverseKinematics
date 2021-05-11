@@ -70,6 +70,7 @@ class MinimalOgre final : public OgreBites::ApplicationContext, public OgreBites
     Ogre::SceneNode* m_cameraNode = nullptr;
 
     std::queue<Ogre::Entity*> m_allocatedSphereJoints; // A cache to prevent recreating all skeleton joints from scratch
+    std::queue<Ogre::Entity*> m_allocatedLines;        // A cache to prevent recreating all skeleton lines from scratch
 
     void LoadSkeletonFromDisk();
 

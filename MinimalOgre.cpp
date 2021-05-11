@@ -107,8 +107,9 @@ bool MinimalOgre::frameRenderingQueued(const Ogre::FrameEvent& evt) {
     OgreBites::ApplicationContext::frameRenderingQueued(evt);
 
     m_allocatedSphereJoints = std::move(*m_skeletonRenderer).YieldAllocatedJointSpheres();
-    m_skeletonRenderer =
-        std::make_unique<SkeletonRenderer>(*getRoot(), *m_sceneManager, std::move(m_allocatedSphereJoints));
+    m_allocatedLines = std::move(*m_skeletonRenderer).YieldAllocatedLines();
+    m_skeletonRenderer = std::make_unique<SkeletonRenderer>(
+        *getRoot(), *m_sceneManager, std::move(m_allocatedSphereJoints), std::move(m_allocatedLines));
     bool cameraManNeeded = true;
 
     m_skeleton->draw(*m_skeletonRenderer);
